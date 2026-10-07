@@ -81,7 +81,7 @@
 @media(max-width:620px){.studentGrid{grid-template-columns:1fr}.studentPanel{margin:auto}.studentCard{min-height:290px}}
 
 
-.faceTune{display:none;margin-top:10px;padding:10px;border:1px solid #d9dee5;border-radius:10px;background:#f7f8fa}.faceTune.show{display:block}.faceTuneRow{display:grid;grid-template-columns:66px 1fr 34px;gap:8px;align-items:center;margin:7px 0;font-size:12px}.faceTuneRow input{margin:0!important}.faceRigPreview{display:grid;grid-template-columns:minmax(190px,240px) 1fr;align-items:center;gap:14px;margin-top:12px}.faceRigPreview svg{width:100%;max-width:240px;height:auto;aspect-ratio:140/210;background:#eef1f4;border-radius:12px;border:1px solid #d7dde5;justify-self:center}.faceRigPreview .small{line-height:1.45}.facePreviewLabel{font-size:11px;font-weight:900;color:#68717e;margin-bottom:5px}@media(max-width:620px){.faceRigPreview{grid-template-columns:1fr}.faceRigPreview svg{width:min(78vw,260px);max-width:260px}.faceRigPreview .small{text-align:center}}
+.faceTune{display:none;margin-top:10px;padding:10px;border:1px solid #d9dee5;border-radius:10px;background:#f7f8fa}.faceTune.show{display:block}.faceTuneTitle{font-size:12px;font-weight:900;margin-bottom:6px}.faceTuneLayout{display:grid;grid-template-columns:minmax(0,1fr) minmax(185px,230px);gap:14px;align-items:start}.faceTuneControls{min-width:0}.faceTuneRow{display:grid;grid-template-columns:58px minmax(0,1fr) 34px;gap:7px;align-items:center;margin:7px 0;font-size:12px}.faceTuneRow input{margin:0!important}.faceRigPreview{position:sticky;top:8px;min-width:0}.facePreviewLabel{font-size:11px;font-weight:900;color:#68717e;margin-bottom:5px;text-align:center}.faceRigPreview svg{display:block;width:100%;height:auto;aspect-ratio:1/1.05;background:linear-gradient(#e9edf1,#f7f8fa);border-radius:14px;border:1px solid #d7dde5}.facePreviewHint{font-size:10px;line-height:1.35;color:#68717e;text-align:center;margin-top:6px}@media(max-width:620px){.faceTune{padding:9px}.faceTuneLayout{grid-template-columns:minmax(0,1fr) minmax(118px,42%);gap:9px}.faceTuneRow{grid-template-columns:44px minmax(0,1fr) 29px;gap:5px;font-size:11px}.faceTuneRow select{min-width:0;width:100%}.facePreviewHint{font-size:9px}.facePreviewLabel{font-size:10px}}
 
 
 .characterManage{margin-top:18px;padding-top:14px;border-top:1px solid #eee}.dangerBtn{width:100%;border:1px solid #e7a1a1;background:#fff4f4;color:#b42318;border-radius:10px;padding:11px 12px;font-weight:900;cursor:pointer}.dangerBtn:hover{background:#ffe9e9}.manageNote{font-size:11px;color:var(--muted);line-height:1.45;margin:7px 2px 0}
@@ -203,14 +203,22 @@
         <label for="regWeight">몸무게 (kg) <span style="font-weight:600;color:#8a929d">40~140</span></label><input id="regWeight" type="number" min="40" max="140" step="1" placeholder="70">
         <label for="regPhoto">증명사진 / 얼굴</label><input id="regPhoto" type="file" accept="image/*" capture="user">
         <div class="faceTune" id="faceTune">
-          <b style="font-size:12px">캐릭터 얼굴 맞추기</b>
-          <div class="faceTuneRow"><span>확대</span><input id="faceZoom" type="range" min="0.8" max="2.4" step="0.05" value="1.35"><b id="faceZoomVal">1.35</b></div>
-          <div class="faceTuneRow"><span>좌우</span><input id="faceX" type="range" min="-35" max="35" step="1" value="0"><b id="faceXVal">0</b></div>
-          <div class="faceTuneRow"><span>상하</span><input id="faceY" type="range" min="-45" max="45" step="1" value="-10"><b id="faceYVal">-10</b></div>
-          <div class="faceTuneRow"><span>얼굴형</span><select id="faceShape" class="faceTuneSelect"><option value="oval">보통</option><option value="round">둥근형</option><option value="angular">각진형</option><option value="long">긴형</option><option value="wide">넓적형</option></select><b id="faceShapeVal">보통</b></div>
-          <div class="faceTuneRow"><span>머리</span><input id="headScale" type="range" min="0.85" max="1.18" step="0.01" value="1.00"><b id="headScaleVal">1.00</b></div>
-          <div class="faceTuneRow"><span>턱폭</span><input id="jawWidth" type="range" min="-12" max="12" step="1" value="0"><b id="jawWidthVal">0</b></div>
-          <div class="faceRigPreview"><div><div class="facePreviewLabel">캐릭터 미리보기</div><svg id="faceRigPreview" viewBox="0 0 140 210"></svg></div><div class="small">슬라이더를 움직이면 실제 캐릭터 얼굴에 적용되는 크기·위치·얼굴형을 크게 확인할 수 있습니다. 사진 전체가 아니라 머리 안쪽 얼굴 영역만 사용됩니다.</div></div>
+          <div class="faceTuneTitle">캐릭터 얼굴 맞추기</div>
+          <div class="faceTuneLayout">
+            <div class="faceTuneControls">
+              <div class="faceTuneRow"><span>확대</span><input id="faceZoom" type="range" min="0.8" max="2.4" step="0.05" value="1.35"><b id="faceZoomVal">1.35</b></div>
+              <div class="faceTuneRow"><span>좌우</span><input id="faceX" type="range" min="-35" max="35" step="1" value="0"><b id="faceXVal">0</b></div>
+              <div class="faceTuneRow"><span>상하</span><input id="faceY" type="range" min="-45" max="45" step="1" value="-10"><b id="faceYVal">-10</b></div>
+              <div class="faceTuneRow"><span>얼굴형</span><select id="faceShape" class="faceTuneSelect"><option value="oval">보통</option><option value="round">둥근형</option><option value="angular">각진형</option><option value="long">긴형</option><option value="wide">넓적형</option></select><b id="faceShapeVal">보통</b></div>
+              <div class="faceTuneRow"><span>머리</span><input id="headScale" type="range" min="0.85" max="1.18" step="0.01" value="1.00"><b id="headScaleVal">1.00</b></div>
+              <div class="faceTuneRow"><span>턱폭</span><input id="jawWidth" type="range" min="-12" max="12" step="1" value="0"><b id="jawWidthVal">0</b></div>
+            </div>
+            <div class="faceRigPreview">
+              <div class="facePreviewLabel">얼굴 미리보기</div>
+              <svg id="faceRigPreview" viewBox="18 0 84 96" preserveAspectRatio="xMidYMid meet"></svg>
+              <div class="facePreviewHint">머리 부분만 크게 확대해서 보여줍니다.</div>
+            </div>
+          </div>
         </div>
         <div class="studentHelp">등록한 사진은 학생증과 실제 캐릭터 얼굴에 함께 사용합니다. 키·몸무게에 따른 능력치 차이는 시작 성향 정도이며 훈련으로 충분히 뒤집을 수 있습니다.</div>
         <div class="studentError" id="studentError"></div>
