@@ -80,6 +80,8 @@
 
 .faceTune{display:none;margin-top:10px;padding:10px;border:1px solid #d9dee5;border-radius:10px;background:#f7f8fa}.faceTune.show{display:block}.faceTuneRow{display:grid;grid-template-columns:66px 1fr 34px;gap:8px;align-items:center;margin:7px 0;font-size:12px}.faceTuneRow input{margin:0!important}.faceRigPreview{display:flex;align-items:center;gap:10px;margin-top:8px}.faceRigPreview svg{width:92px;height:120px;background:#eef1f4;border-radius:10px;border:1px solid #d7dde5}.faceRigPreview .small{line-height:1.35}
 
+
+.characterManage{margin-top:18px;padding-top:14px;border-top:1px solid #eee}.dangerBtn{width:100%;border:1px solid #e7a1a1;background:#fff4f4;color:#b42318;border-radius:10px;padding:11px 12px;font-weight:900;cursor:pointer}.dangerBtn:hover{background:#ffe9e9}.manageNote{font-size:11px;color:var(--muted);line-height:1.45;margin:7px 2px 0}
 </style>
 </head><body><div class="openingOverlay" id="openingOverlay" aria-hidden="true">
   <div class="openingControls">
@@ -209,6 +211,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const S={energy:100,money:5000,rank:500,action:null,interrupted:false,returnAction:null,stats:{str:1,agi:1,end:1,tgh:1,luck:1},rec:{bread:0,breadMoney:0},boss:false,defeated:{},fightCount:0,wins:0,losses:0,attempts:{},history:[],profile:{registered:false,name:'',birth:'',height:175,weight:70,photo:'',face:{zoom:1.35,x:0,y:-10},registeredAt:''}};
+function freshState(){return {energy:100,money:5000,rank:500,action:null,interrupted:false,returnAction:null,stats:{str:1,agi:1,end:1,tgh:1,luck:1},rec:{bread:0,breadMoney:0},boss:false,defeated:{},fightCount:0,wins:0,losses:0,attempts:{},history:[],profile:{registered:false,name:'',birth:'',height:175,weight:70,photo:'',face:{zoom:1.35,x:0,y:-10},registeredAt:''}}}
+function resetStateInPlace(){const n=freshState();for(const k of Object.keys(S))delete S[k];Object.assign(S,n)}
 const SUPABASE_URL='https://kqkoybbkpmxtvuqwxihz.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_tpR-g8v-Pe3AY0O6bLp32Q_KNwB2b8C';
 const LOCAL_SAVE_KEY='gyeongseong_idle_save_v1';
@@ -311,7 +315,29 @@ function renderValues(){const pn=$('#playerName');if(pn){const photo=S.profile?.
 function setVisual(a){bag.classList.remove('show');dumb.style.display='none';wrap.classList.remove('boxerBounce');wrap.style.left='40%';wrap.style.bottom='72px';wrap.style.transform='';if(!a){scene.className='scene';place.textContent='경성고';statusEl.textContent='대기 중';banner.textContent='활동을 선택해 주세요.';setMainPose(P.idle);return}const x=acts[a];scene.className='scene '+x.scene;place.textContent=x.place;statusEl.textContent=x.name;banner.textContent=x.name+' 중.';if(a==='punch'){bag.classList.add('show');wrap.classList.add('boxerBounce');setMainPose(P.guard)}if(a==='run')setMainPose(P.run1);if(a==='lift'){dumb.style.display='block';setMainPose(P.liftDown);positionDumbbell(P.liftDown)}if(a==='sleep'){wrap.style.left='16%';wrap.style.bottom='48px';setMainPose(P.sleep)}}
 function render(){renderValues();if(!S.interrupted)setVisual(S.action);queueCloudSave()}
 function updateLiveStats(){document.querySelectorAll('[data-stat]').forEach(el=>el.textContent=S.stats[el.dataset.stat].toFixed(2));document.querySelectorAll('[data-rec=bread]').forEach(el=>el.textContent=S.rec.bread);document.querySelectorAll('[data-rec=breadMoney]').forEach(el=>el.textContent=S.rec.breadMoney.toLocaleString()+'원')}
-function drawer(tab){let d=$('#drawer');d.classList.add('open');if(tab==='act'){d.innerHTML='<b>활동</b>'+Object.entries(acts).map(([k,v])=>`<button class="activity ${S.action===k?'active':''}" onclick="choose('${k}')"><b>${v.name}</b><div class="small">${v.place}</div></button>`).join('')}else if(tab==='stats'){d.innerHTML=`<b>능력치</b><div class="stats">${[['str','근력'],['agi','민첩'],['end','지구력'],['tgh','맷집'],['luck','행운']].map(([k,n])=>`<div class="stat"><span class="small">${n}</span><div><b data-stat="${k}">${S.stats[k].toFixed(2)}</b></div></div>`).join('')}</div>`}else if(tab==='records'){const hist=[...S.history].reverse().map(h=>`<div class="historyItem"><div class="historyDate">${h.date}</div><div class="historyText">${h.text}</div></div>`).join('');d.innerHTML=`<b>기록</b><div class="stats" style="margin-top:8px"><div class="stat"><span class="small">전적</span><div><b>${S.wins}승 ${S.losses}패</b></div></div><div class="stat"><span class="small">현재 서열</span><div><b>#${S.rank}</b></div></div></div><p>빵셔틀 <b data-rec="bread">${S.rec.bread}</b>회</p><p>매점에 뜯긴 돈 <b data-rec="breadMoney">${S.rec.breadMoney.toLocaleString()}원</b></p><div class="history"><b>일대기</b><div style="margin-top:10px">${hist}</div></div>`}else{const rows=[];for(let r=499;r>=448;r--)if(r!==S.rank)rows.push(r);d.innerHTML='<b>교내 서열</b><p class="small">현재 내 서열은 #'+S.rank+'입니다. 이미 꺾고 내려보낸 상대에게는 다시 도전하지 않습니다. #449 이상은 #450 황재호를 쓰러뜨리기 전까지 잠겨 있습니다.</p>'+rows.map(r=>{const locked=r<450&&!S.boss;const cleared=!!S.defeated[r]&&r>S.rank;return `<div class="rankrow ${locked?'locked':''}"><span><b>#${r}</b> ${r===450?'황재호 👑':'학생 '+r}</span>${cleared?'<span class="cleared">격파 완료</span>':`<button ${locked?'disabled':`onclick="challenge(${r})"`}>${locked?'🔒':'도전'}</button>`}</div>`}).join('')}updateLiveStats()}
+function drawer(tab){let d=$('#drawer');d.classList.add('open');if(tab==='act'){d.innerHTML='<b>활동</b>'+Object.entries(acts).map(([k,v])=>`<button class="activity ${S.action===k?'active':''}" onclick="choose('${k}')"><b>${v.name}</b><div class="small">${v.place}</div></button>`).join('')}else if(tab==='stats'){d.innerHTML=`<b>능력치</b><div class="stats">${[['str','근력'],['agi','민첩'],['end','지구력'],['tgh','맷집'],['luck','행운']].map(([k,n])=>`<div class="stat"><span class="small">${n}</span><div><b data-stat="${k}">${S.stats[k].toFixed(2)}</b></div></div>`).join('')}</div>`}else if(tab==='records'){const hist=[...S.history].reverse().map(h=>`<div class="historyItem"><div class="historyDate">${h.date}</div><div class="historyText">${h.text}</div></div>`).join('');d.innerHTML=`<b>기록</b><div class="stats" style="margin-top:8px"><div class="stat"><span class="small">전적</span><div><b>${S.wins}승 ${S.losses}패</b></div></div><div class="stat"><span class="small">현재 서열</span><div><b>#${S.rank}</b></div></div></div><p>빵셔틀 <b data-rec="bread">${S.rec.bread}</b>회</p><p>매점에 뜯긴 돈 <b data-rec="breadMoney">${S.rec.breadMoney.toLocaleString()}원</b></p><div class="history"><b>일대기</b><div style="margin-top:10px">${hist}</div></div><div class="characterManage"><b>캐릭터 관리</b><button class="dangerBtn" style="margin-top:9px" onclick="deleteCharacter()">캐릭터 삭제하고 처음부터</button><div class="manageNote">이 기기의 저장 데이터와 로그인 중인 경우 Supabase 클라우드 세이브까지 삭제합니다. 계정 자체는 삭제되지 않습니다.</div></div>`}else{const rows=[];for(let r=499;r>=448;r--)if(r!==S.rank)rows.push(r);d.innerHTML='<b>교내 서열</b><p class="small">현재 내 서열은 #'+S.rank+'입니다. 이미 꺾고 내려보낸 상대에게는 다시 도전하지 않습니다. #449 이상은 #450 황재호를 쓰러뜨리기 전까지 잠겨 있습니다.</p>'+rows.map(r=>{const locked=r<450&&!S.boss;const cleared=!!S.defeated[r]&&r>S.rank;return `<div class="rankrow ${locked?'locked':''}"><span><b>#${r}</b> ${r===450?'황재호 👑':'학생 '+r}</span>${cleared?'<span class="cleared">격파 완료</span>':`<button ${locked?'disabled':`onclick="challenge(${r})"`}>${locked?'🔒':'도전'}</button>`}</div>`}).join('')}updateLiveStats()}
+window.deleteCharacter=async()=>{
+  const first=confirm('지금 키우던 캐릭터를 삭제할까?\n능력치, 순위, 돈, 전적, 일대기, 학생증 정보가 모두 초기화돼.');
+  if(!first)return;
+  const second=confirm('정말 삭제할까? 이 작업은 되돌릴 수 없어.');
+  if(!second)return;
+  try{
+    clearTimeout(cloudTimer);
+    if(cloudUser){
+      const {error}=await sb.from('game_saves').delete().eq('user_id',cloudUser.id);
+      if(error){alert('클라우드 세이브 삭제에 실패했어: '+error.message);return;}
+    }
+    localStorage.removeItem(LOCAL_SAVE_KEY);
+    localStorage.removeItem(OPENING_KEY);
+    resetStateInPlace();
+    cloudLoadedFor=null;
+    render();
+    const d=document.getElementById('drawer');if(d)d.classList.remove('open');
+    alert('캐릭터를 삭제했어. 새 전학생으로 다시 시작할게.');
+    openOpening(true);
+  }catch(e){alert('삭제 중 오류가 발생했어: '+(e?.message||e));}
+};
+
 window.choose=k=>{if(S.interrupted)return;S.action=k;motionTick=0;if(k!=='punch')punchBusy=false;render();drawer('act')};document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>drawer(b.dataset.tab));
 function swingBag(big=false){bag.style.transform=`rotate(${big?-11:-6}deg)`;setTimeout(()=>bag.style.transform='rotate(0deg)',180)}
 function positionDumbbell(p){const sx=wrap.offsetWidth/140,sy=wrap.offsetHeight/210;const xL=wrap.offsetLeft+p.handL[0]*sx,xR=wrap.offsetLeft+p.handR[0]*sx;const yL=wrap.offsetTop+p.handL[1]*sy,yR=wrap.offsetTop+p.handR[1]*sy;const gripPad=18;dumb.style.left=(Math.min(xL,xR)-gripPad)+'px';dumb.style.width=(Math.abs(xR-xL)+gripPad*2)+'px';dumb.style.top=((yL+yR)/2-4)+'px'}
