@@ -81,7 +81,7 @@
 @media(max-width:620px){.studentGrid{grid-template-columns:1fr}.studentPanel{margin:auto}.studentCard{min-height:290px}}
 
 
-.faceTune{display:none;margin-top:10px;padding:10px;border:1px solid #d9dee5;border-radius:10px;background:#f7f8fa}.faceTune.show{display:block}.faceTuneRow{display:grid;grid-template-columns:66px 1fr 34px;gap:8px;align-items:center;margin:7px 0;font-size:12px}.faceTuneRow input{margin:0!important}.faceRigPreview{display:flex;align-items:center;gap:10px;margin-top:8px}.faceRigPreview svg{width:92px;height:120px;background:#eef1f4;border-radius:10px;border:1px solid #d7dde5}.faceRigPreview .small{line-height:1.35}
+.faceTune{display:none;margin-top:10px;padding:10px;border:1px solid #d9dee5;border-radius:10px;background:#f7f8fa}.faceTune.show{display:block}.faceTuneRow{display:grid;grid-template-columns:66px 1fr 34px;gap:8px;align-items:center;margin:7px 0;font-size:12px}.faceTuneRow input{margin:0!important}.faceRigPreview{display:grid;grid-template-columns:minmax(190px,240px) 1fr;align-items:center;gap:14px;margin-top:12px}.faceRigPreview svg{width:100%;max-width:240px;height:auto;aspect-ratio:140/210;background:#eef1f4;border-radius:12px;border:1px solid #d7dde5;justify-self:center}.faceRigPreview .small{line-height:1.45}.facePreviewLabel{font-size:11px;font-weight:900;color:#68717e;margin-bottom:5px}@media(max-width:620px){.faceRigPreview{grid-template-columns:1fr}.faceRigPreview svg{width:min(78vw,260px);max-width:260px}.faceRigPreview .small{text-align:center}}
 
 
 .characterManage{margin-top:18px;padding-top:14px;border-top:1px solid #eee}.dangerBtn{width:100%;border:1px solid #e7a1a1;background:#fff4f4;color:#b42318;border-radius:10px;padding:11px 12px;font-weight:900;cursor:pointer}.dangerBtn:hover{background:#ffe9e9}.manageNote{font-size:11px;color:var(--muted);line-height:1.45;margin:7px 2px 0}
@@ -210,7 +210,7 @@
           <div class="faceTuneRow"><span>얼굴형</span><select id="faceShape" class="faceTuneSelect"><option value="oval">보통</option><option value="round">둥근형</option><option value="angular">각진형</option><option value="long">긴형</option><option value="wide">넓적형</option></select><b id="faceShapeVal">보통</b></div>
           <div class="faceTuneRow"><span>머리</span><input id="headScale" type="range" min="0.85" max="1.18" step="0.01" value="1.00"><b id="headScaleVal">1.00</b></div>
           <div class="faceTuneRow"><span>턱폭</span><input id="jawWidth" type="range" min="-12" max="12" step="1" value="0"><b id="jawWidthVal">0</b></div>
-          <div class="faceRigPreview"><svg id="faceRigPreview" viewBox="0 0 140 210"></svg><div class="small">사진 전체를 붙이지 않고 얼굴 부분만 머리 안에 잘라 넣습니다. 얼굴형, 머리 크기, 턱폭도 함께 조절할 수 있습니다.</div></div>
+          <div class="faceRigPreview"><div><div class="facePreviewLabel">캐릭터 미리보기</div><svg id="faceRigPreview" viewBox="0 0 140 210"></svg></div><div class="small">슬라이더를 움직이면 실제 캐릭터 얼굴에 적용되는 크기·위치·얼굴형을 크게 확인할 수 있습니다. 사진 전체가 아니라 머리 안쪽 얼굴 영역만 사용됩니다.</div></div>
         </div>
         <div class="studentHelp">등록한 사진은 학생증과 실제 캐릭터 얼굴에 함께 사용합니다. 키·몸무게에 따른 능력치 차이는 시작 성향 정도이며 훈련으로 충분히 뒤집을 수 있습니다.</div>
         <div class="studentError" id="studentError"></div>
@@ -558,17 +558,15 @@ const statGainAt={punch:0,run:0,lift:0};
 function tryStatGain(key,cooldownMs,fn){const now=Date.now();if(now<statGainAt[key])return false;statGainAt[key]=now+cooldownMs;fn();updateLiveStats();return true;}
 function punchSpeedScale(){
   const v=Math.max(.5,Number(S.stats.agi)||1);
-  // 샌드백도 실전과 같은 민첩 성장축을 사용한다. 초반은 일부러 매우 굼뜨고,
-  // 민첩이 오를수록 준비-타격-회수 전체가 단계적으로 빨라진다.
   let base;
-  if(v<1.5)base=5.0;
-  else if(v<2)base=4.15;
-  else if(v<3)base=3.25;
-  else if(v<4)base=2.45;
-  else if(v<5)base=1.85;
-  else base=Math.max(1.05,1.45-(v-5)*.10);
+  if(v<=1)base=5.8+(1-v)*.8;
+  else if(v<=2)base=5.8-(v-1)*1.7;   // 2 = 4.1
+  else if(v<=3)base=4.1-(v-2)*1.25;  // 3 = 2.85
+  else if(v<=4)base=2.85-(v-3)*.85;  // 4 = 2.0
+  else if(v<=6)base=2.0-(v-4)*.45;   // 6 = 1.1
+  else base=Math.max(.62,1.1-(v-6)*.10);
   const lv=fatigueLevel();
-  return base*(1+lv*.20);
+  return base*(1+lv*.28);
 }
 async function playOneTwo(){
   if(punchBusy||S.interrupted||S.action!=='punch')return;
@@ -647,14 +645,27 @@ function applyEnemyBodyStyle(svg,style){
 }
 
 function enemyCombatStats(r,profile){
-  const progress=Math.max(0,Math.min(1,(500-r)/50));
-  let base=1+progress*1.45;
+  // 공식 난이도 곡선: 순위가 올라갈수록 핵심 4스탯 평균이 끝까지 계속 상승한다.
+  // #278 부근은 평균 약 5.7, #100은 약 11.5, #1은 약 26을 목표로 한다.
+  const anchors=[
+    [500,1.00],[475,1.40],[451,1.90],[450,2.30],[400,3.00],[350,4.00],
+    [300,5.20],[250,6.50],[200,8.00],[150,9.70],[100,11.50],[75,12.70],
+    [50,14.00],[30,15.70],[20,17.00],[10,19.50],[5,22.00],[1,26.00]
+  ];
+  const rank=Math.max(1,Math.min(500,Number(r)||500));
+  let base=1;
+  for(let i=0;i<anchors.length-1;i++){
+    const [rHi,vLo]=anchors[i],[rLo,vHi]=anchors[i+1];
+    if(rank<=rHi&&rank>=rLo){const t=(rHi-rank)/(rHi-rLo);base=vLo+(vHi-vLo)*t;break}
+  }
   let st={str:base,agi:base,end:base,tgh:base};
-  if(profile.key==='pressure'){st.str+=.22;st.tgh+=.18;st.agi-=.08}
-  if(profile.key==='outboxer'){st.agi+=.28;st.end+=.14;st.tgh-=.10}
-  if(profile.key==='counter'){st.agi+=.14;st.tgh+=.12}
-  if(profile.key==='wild'){st.str+=.16;st.end-=.06}
-  if(r===450){st.str+=.35;st.end+=.32;st.tgh+=.30;st.agi+=.12}
+  // 같은 평균이라도 성향에 따라 전투 체감이 달라지도록 편차를 크게 준다.
+  if(profile.key==='pressure'){st.str*=1.16;st.tgh*=1.12;st.agi*=.90;st.end*=1.04}
+  if(profile.key==='outboxer'){st.agi*=1.22;st.end*=1.10;st.str*=.90;st.tgh*=.88}
+  if(profile.key==='counter'){st.agi*=1.12;st.tgh*=1.12;st.str*=1.02;st.end*=.96}
+  if(profile.key==='wild'){st.str*=1.20;st.agi*=1.05;st.end*=.88;st.tgh*=.94}
+  if(r===450){st.str*=1.18;st.end*=1.14;st.tgh*=1.16;st.agi*=1.05}
+  for(const k of ['str','agi','end','tgh'])st[k]=Math.max(.65,Number(st[k].toFixed(2)));
   return st;
 }
 function enemyProfileForRank(r){
@@ -666,13 +677,19 @@ function enemyProfileForRank(r){
   return {key:'wild',name:'난전형',jab:0.44,cross:0.56,advance:0.55,retreat:0.20,feint:0.12,guardPose:mixPose(P.guard,P.jabLoad,.12)};
 }
 function combatSpeedScale(agi,tired=false){
-  // 공격 1사이클 전체에 적용. 초반(민첩 1 전후)은 확실히 굼뜨고,
-  // 민첩이 오를수록 준비-타격-회수까지 모두 빨라진다.
+  // 민첩은 '조금 빠른 정도'가 아니라 육안으로 바로 느껴질 만큼 공격 템포를 바꾼다.
+  // 수치가 낮으면 준비/타격/회수가 매우 느리고, 4~6부터 눈에 띄게 빨라진다.
   const a=Math.max(.5,Number(agi)||1);
-  let s=1.42-(a-1)*.20;
-  s=Math.max(.60,Math.min(1.48,s));
-  if(tired)s*=1.24;
-  return s;
+  let s;
+  if(a<=1)s=3.10+(1-a)*.70;           // 1.0 = 매우 느림
+  else if(a<=2)s=3.10-(a-1)*1.00;     // 2.0 = 2.10
+  else if(a<=3)s=2.10-(a-2)*.65;      // 3.0 = 1.45
+  else if(a<=4)s=1.45-(a-3)*.45;      // 4.0 = 1.00
+  else if(a<=6)s=1.00-(a-4)*.225;     // 6.0 = 0.55
+  else if(a<=10)s=.55-(a-6)*.0575;    // 10.0 = 0.32
+  else s=Math.max(.20,.32-(a-10)*.012);
+  if(tired)s*=1.65;
+  return Math.max(.20,s);
 }
 
 function firstClearStatReward(){
@@ -684,7 +701,7 @@ function firstClearStatReward(){
   S.stats[key]+=amount;
   return {key,label,amount};
 }
-function challenge(r,targetId=null,targetRow=null){if(S.interrupted)return;S.fightCount++;S.attempts[r]=(S.attempts[r]||0)+1;S.interrupted=true;S.returnAction=S.action;$('#drawer').classList.remove('open');const battle=$('#battle'),arena=$('#barena'),pW=$('#bfPW'),eW=$('#bfEW'),pRig=$('#bfP'),eRig=$('#bfE');battle.style.display='block';$('#fightResult').style.display='none';$('#bpName').textContent='#'+S.rank+' 나';const targetName=targetRow?.display_name||npcName(r);$('#beName').textContent='#'+r+' '+targetName;if(S.fightCount===1)addHistory(`첫 싸움: #${r} ${targetName}에게 도전했다.`);let ph=100,eh=100,ended=false,busy=false,old=S.rank,px=12,ex=0,foot=0,pCombo=0,eCombo=0,telemetryTimer=null;const telemetryPoints=[];const enemyProfile=enemyProfileForRank(r),enemyStyle=targetRow&&!targetRow.is_cpu?userEnemyAppearance(targetRow):enemyAppearanceForRank(r),enemyStats=targetRow?.stats?Object.assign(enemyCombatStats(r,enemyProfile),targetRow.stats):enemyCombatStats(r,enemyProfile);let pMaxSt=70+S.stats.end*20,eMaxSt=70+enemyStats.end*20,pst=pMaxSt,est=eMaxSt;const drawEnemy=pose=>{drawRig(eRig,pose,enemyStyle);applyEnemyBodyStyle(eRig,enemyStyle)};drawPlayerRig(pRig,P.guard);drawEnemy(enemyProfile.guardPose);pW.classList.add('boxerBounce');eW.classList.add('boxerBounce',enemyProfile.key);pW.style.animationDuration=Math.max(.28,.72-S.stats.agi*.07).toFixed(2)+'s';eW.style.animationDuration=Math.max(.28,.72-enemyStats.agi*.07).toFixed(2)+'s';$('#beName').textContent='#'+r+' '+targetName+' · '+enemyProfile.name;
+function challenge(r,targetId=null,targetRow=null){if(S.interrupted)return;S.fightCount++;S.attempts[r]=(S.attempts[r]||0)+1;S.interrupted=true;S.returnAction=S.action;$('#drawer').classList.remove('open');const battle=$('#battle'),arena=$('#barena'),pW=$('#bfPW'),eW=$('#bfEW'),pRig=$('#bfP'),eRig=$('#bfE');battle.style.display='block';$('#fightResult').style.display='none';$('#bpName').textContent='#'+S.rank+' 나';const targetName=targetRow?.display_name||npcName(r);$('#beName').textContent='#'+r+' '+targetName;if(S.fightCount===1)addHistory(`첫 싸움: #${r} ${targetName}에게 도전했다.`);let ph=100,eh=100,ended=false,busy=false,old=S.rank,px=12,ex=0,foot=0,pCombo=0,eCombo=0,telemetryTimer=null;const telemetryPoints=[];const enemyProfile=enemyProfileForRank(r),enemyStyle=targetRow&&!targetRow.is_cpu?userEnemyAppearance(targetRow):enemyAppearanceForRank(r),enemyStats=(targetRow&&!targetRow.is_cpu&&targetRow.stats)?Object.assign(enemyCombatStats(r,enemyProfile),targetRow.stats):enemyCombatStats(r,enemyProfile);let pMaxSt=70+S.stats.end*20,eMaxSt=70+enemyStats.end*20,pst=pMaxSt,est=eMaxSt;const drawEnemy=pose=>{drawRig(eRig,pose,enemyStyle);applyEnemyBodyStyle(eRig,enemyStyle)};drawPlayerRig(pRig,P.guard);drawEnemy(enemyProfile.guardPose);pW.classList.add('boxerBounce');eW.classList.add('boxerBounce',enemyProfile.key);const bounceDur=a=>Math.max(.24,Math.min(1.05,1.05-(Math.max(.5,a)-1)*.13));pW.style.animationDuration=bounceDur(S.stats.agi).toFixed(2)+'s';eW.style.animationDuration=bounceDur(enemyStats.agi).toFixed(2)+'s';$('#beName').textContent='#'+r+' '+targetName+' · '+enemyProfile.name;
 const arenaW=()=>Math.max(260,arena.clientWidth||window.innerWidth),fighterW=()=>Math.max(90,pW.getBoundingClientRect().width||150),maxX=()=>Math.max(130,arenaW()-fighterW()-8),mobileFight=()=>arenaW()<=480,minSep=()=>mobileFight()?76:100,farSep=()=>mobileFight()?156:195,nearSep=()=>mobileFight()?82:105,dist=()=>ex-px;function clamp(){const mx=maxX(),sep=minSep();px=Math.max(8,Math.min(px,mx-sep));ex=Math.max(px+sep,Math.min(ex,mx))}function placeF(){pW.style.left=px+'px';eW.style.left=ex+'px'}ex=maxX();clamp();placeF();function hp(){ $('#bpHp').style.width=ph+'%';$('#beHp').style.width=eh+'%';$('#bpTxt').textContent=Math.ceil(ph)+' / 100';$('#beTxt').textContent=Math.ceil(eh)+' / 100';$('#bpSt').style.width=(pst/pMaxSt*100)+'%';$('#beSt').style.width=(est/eMaxSt*100)+'%';$('#bpStTxt').textContent='ST '+Math.ceil(pst)+' / '+Math.ceil(pMaxSt);$('#beStTxt').textContent='ST '+Math.ceil(est)+' / '+Math.ceil(eMaxSt);updateFightAdvantage()}function msg(t){$('#fightMsg').textContent=t}
 function drawFightTelemetry(){
   const c=$('#fightChart');if(!c)return;
@@ -762,10 +779,13 @@ hp();msg('VS');telemetryPoints.push({p:100,e:100});updateFightAdvantage();drawFi
   }
   if(pst<8){px=Math.max(10,px-14);msg('숨을 고르며 스태미너 회복');clamp();placeF();return}
   if(est<8){ex=Math.min(maxX(),ex+14);msg('상대가 숨을 고른다');clamp();placeF();return}
-  const pt=Math.random()<.5+(S.stats.agi-enemyStats.agi)*.035;
+  // 민첩 우위가 공격권에도 강하게 반영된다. 애니메이션 속도뿐 아니라 실제 선공/연속공격 빈도도 달라진다.
+  const agiGap=S.stats.agi-enemyStats.agi;
+  const playerTurn=Math.max(.06,Math.min(.94,.5+agiGap*.13));
+  const pt=Math.random()<playerTurn;
   if(pt){attack(true,(pCombo++%2===0)?'jab':'cross')}
   else{const type=Math.random()<enemyProfile.jab?'jab':'cross';eCombo++;attack(false,type)}
-},420);$('#fightBack').onclick=()=>{clearInterval(loop);clearInterval(telemetryTimer);window.removeEventListener('resize',onFightResize);pW.classList.remove('boxerBounce');eW.classList.remove('boxerBounce','pressure','outboxer','counter','wild');pW.style.animationDuration='';eW.style.animationDuration='';battle.style.display='none';S.interrupted=false;S.action=S.returnAction;S.returnAction=null;render();drawer('ranking')}}
+},300);$('#fightBack').onclick=()=>{clearInterval(loop);clearInterval(telemetryTimer);window.removeEventListener('resize',onFightResize);pW.classList.remove('boxerBounce');eW.classList.remove('boxerBounce','pressure','outboxer','counter','wild');pW.style.animationDuration='';eW.style.animationDuration='';battle.style.display='none';S.interrupted=false;S.action=S.returnAction;S.returnAction=null;render();drawer('ranking')}}
 document.getElementById('cloudBtn').onclick=()=>{document.getElementById('cloudModal').classList.add('open');cloudMessage(cloudUser?'로그인됨 · 자동 저장 중':'이메일 계정으로 로그인해 줘.')};
 document.getElementById('cloudClose').onclick=()=>document.getElementById('cloudModal').classList.remove('open');
 document.getElementById('cloudModal').addEventListener('click',e=>{if(e.target.id==='cloudModal')e.currentTarget.classList.remove('open')});
