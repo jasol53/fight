@@ -68,7 +68,7 @@
 .openingControls{position:absolute;right:16px;top:16px;display:flex;gap:8px;z-index:4}
 .openingBtn{border:none;border-radius:999px;padding:10px 14px;font-weight:900;background:#ffffff16;color:#fff}.openingBtn.primary{background:#ffffff;color:#121821}.openingBtn:active{transform:translateY(1px)}
 .openingSilhouetteHint{position:absolute;top:22%;left:50%;transform:translateX(-50%);font-size:14px;color:#d8dee7;letter-spacing:1px;opacity:.9;text-align:center}
-.openingFade{animation:openingFade .36s ease}@keyframes openingFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.openingFade{animation:openingFade .36s ease}@keyframes openingFade{from{opacity:0;filter:brightness(.85)}to{opacity:1;filter:brightness(1)}}
 
 
 /* student ID registration */
@@ -149,8 +149,8 @@
       <div class="studentForm">
         <label for="regName">이름</label><input id="regName" maxlength="12" placeholder="이름">
         <label for="regBirth">생년월일</label><input id="regBirth" type="date">
-        <label for="regHeight">키 (cm)</label><input id="regHeight" type="number" min="145" max="205" step="1" placeholder="175">
-        <label for="regWeight">몸무게 (kg)</label><input id="regWeight" type="number" min="40" max="140" step="1" placeholder="70">
+        <label for="regHeight">키 (cm) <span style="font-weight:600;color:#8a929d">145~205</span></label><input id="regHeight" type="number" min="145" max="205" step="1" placeholder="175">
+        <label for="regWeight">몸무게 (kg) <span style="font-weight:600;color:#8a929d">40~140</span></label><input id="regWeight" type="number" min="40" max="140" step="1" placeholder="70">
         <label for="regPhoto">증명사진 / 얼굴</label><input id="regPhoto" type="file" accept="image/*" capture="user">
         <div class="studentHelp">얼굴 사진은 학생증 프로필용으로만 사용합니다. 키·몸무게에 따른 능력치 차이는 시작 성향 정도이며 훈련으로 충분히 뒤집을 수 있습니다.</div>
         <div class="studentError" id="studentError"></div>
@@ -288,7 +288,7 @@ function openStudentRegistration(){if(S.profile?.registered)return;const m=$('#s
 function closeStudentRegistration(){const m=$('#studentModal');m.classList.remove('open');m.setAttribute('aria-hidden','true');document.body.style.overflow=''}
 ['regName','regBirth','regHeight','regWeight'].forEach(id=>document.getElementById(id)?.addEventListener('input',previewStudent));
 document.getElementById('regPhoto')?.addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{pendingStudentPhoto=await compressStudentPhoto(f);$('#cardPhoto').innerHTML=`<img src="${pendingStudentPhoto}">`}catch(_){$('#studentError').textContent='사진을 읽지 못했습니다.'}});
-document.getElementById('studentSubmit')?.addEventListener('click',()=>{const name=$('#regName').value.trim(),birth=$('#regBirth').value,h=Number($('#regHeight').value),w=Number($('#regWeight').value);if(!name||!birth||!h||!w){$('#studentError').textContent='이름, 생년월일, 키, 몸무게를 모두 입력해 줘.';return}if(h<145||h>205||w<40||w>140){$('#studentError').textContent='키/몸무게 입력 범위를 확인해 줘.';return}const base=initialStatsFor(h,w);S.profile={registered:true,name,birth,height:h,weight:w,photo:pendingStudentPhoto||'',registeredAt:kstDate()};S.stats=base;S.rank=500;S.energy=100;S.history=[];addHistory(`경성고등학교에 전입했다. 신장 ${h}cm, 체중 ${w}kg. 학생증을 발급받았다.`);addHistory('교내 서열 #500으로 등록됐다.');closeStudentRegistration();render();queueCloudSave();});
+document.getElementById('studentSubmit')?.addEventListener('click',()=>{const name=$('#regName').value.trim(),birth=$('#regBirth').value,h=Number($('#regHeight').value),w=Number($('#regWeight').value);if(!name||!birth||!h||!w){$('#studentError').textContent='이름, 생년월일, 키, 몸무게를 모두 입력해 줘.';return}if(h<145||h>205){$('#studentError').textContent='키는 145~205cm 사이로 입력해 줘.';return}if(w<40||w>140){$('#studentError').textContent='몸무게는 40~140kg 사이로 입력해 줘.';return}const base=initialStatsFor(h,w);S.profile={registered:true,name,birth,height:h,weight:w,photo:pendingStudentPhoto||'',registeredAt:kstDate()};S.stats=base;S.rank=500;S.energy=100;S.history=[];addHistory(`경성고등학교에 전입했다. 신장 ${h}cm, 체중 ${w}kg. 학생증을 발급받았다.`);addHistory('교내 서열 #500으로 등록됐다.');closeStudentRegistration();render();queueCloudSave();});
 
 function renderValues(){const pn=$('#playerName');if(pn){const photo=S.profile?.photo?`<span class="profileThumb"><img src="${S.profile.photo}">${S.profile.name||'전학생'}</span>`:(S.profile?.name||'전학생');pn.innerHTML=photo}$('#rank').textContent='#'+S.rank;$('#money').textContent=S.money.toLocaleString()+'원';$('#energyText').textContent=Math.round(S.energy)+' / 100';$('#energyBar').style.width=Math.max(0,Math.min(100,S.energy))+'%';updateLiveStats()}
 function setVisual(a){bag.classList.remove('show');dumb.style.display='none';wrap.classList.remove('boxerBounce');wrap.style.left='40%';wrap.style.bottom='72px';wrap.style.transform='';if(!a){scene.className='scene';place.textContent='경성고';statusEl.textContent='대기 중';banner.textContent='활동을 선택해 주세요.';setMainPose(P.idle);return}const x=acts[a];scene.className='scene '+x.scene;place.textContent=x.place;statusEl.textContent=x.name;banner.textContent=x.name+' 중.';if(a==='punch'){bag.classList.add('show');wrap.classList.add('boxerBounce');setMainPose(P.guard)}if(a==='run')setMainPose(P.run1);if(a==='lift'){dumb.style.display='block';setMainPose(P.liftDown);positionDumbbell(P.liftDown)}if(a==='sleep'){wrap.style.left='16%';wrap.style.bottom='48px';setMainPose(P.sleep)}}
