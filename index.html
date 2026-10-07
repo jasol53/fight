@@ -225,7 +225,7 @@ const SUPABASE_PUBLISHABLE_KEY='sb_publishable_tpR-g8v-Pe3AY0O6bLp32Q_KNwB2b8C';
 const LOCAL_SAVE_KEY='gyeongseong_idle_save_v1';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 let cloudUser=null,cloudSaving=false,cloudTimer=null,cloudLoadedFor=null;
-let ladderRows=[],ladderByRank={},ladderChannel=null,ladderReady=false,ladderRefreshTimer=null,currentDrawerTab=null;
+let ladderRows=[],ladderByRank={},ladderById={},ladderChannel=null,ladderReady=false,ladderRefreshTimer=null,currentDrawerTab=null;
 
 function publicAppearance(){
   const b=bodyParams();
@@ -254,13 +254,31 @@ async function loadLadder(){
   const lo=Math.max(1,S.rank-30),hi=S.rank+12;
   const {data,error}=await sb.from('ladder_players').select('id,user_id,is_cpu,display_name,rank,stats,appearance,combat_level,wins,losses').gte('rank',lo).lte('rank',hi).order('rank',{ascending:true});
   if(error){console.warn('ladder load',error.message);return []}
-  ladderRows=data||[];ladderByRank=Object.fromEntries(ladderRows.map(x=>[Number(x.rank),x]));return ladderRows;
+  ladderRows=data||[];ladderByRank=Object.fromEntries(ladderRows.map(x=>[Number(x.rank),x]));ladderById=Object.fromEntries(ladderRows.map(x=>[x.id,x]));return ladderRows;
 }
 function subscribeLadder(){
   if(ladderChannel||!cloudUser)return;
-  ladderChannel=sb.channel('gyeongseong-ladder-live').on('postgres_changes',{event:'*',schema:'public',table:'ladder_players'},()=>{
-    clearTimeout(ladderRefreshTimer);ladderRefreshTimer=setTimeout(async()=>{await refreshMyServerRank();if(currentDrawerTab==='ranking')await renderRankingDrawer();},180);
-  }).subscribe();
+  ladderChannel=sb.channel('gyeongseong-ladder-live')
+    .on('postgres_changes',{event:'*',schema:'public',table:'ladder_players'},payload=>{
+      // stats/appearance autosave UPDATE까지 매번 서열 UI를 다시 그리면
+      // 모바일에서 스크롤/터치가 끊긴다. 순위에 영향이 있는 변경만 갱신한다.
+      let meaningful=payload.eventType!=='UPDATE';
+      const n=payload.new||{},cached=n.id?ladderById[n.id]:null;
+      if(payload.eventType==='UPDATE'){
+        if(n.user_id===cloudUser?.id && Number(n.rank)!==Number(S.rank)) meaningful=true;
+        else if(cached && Number(cached.rank)!==Number(n.rank)) meaningful=true;
+        else if(!cached && Number.isFinite(Number(n.rank))){
+          const lo=Math.max(1,S.rank-30),hi=S.rank+12;
+          if(Number(n.rank)>=lo && Number(n.rank)<=hi) meaningful=true;
+        }
+      }
+      if(!meaningful)return;
+      clearTimeout(ladderRefreshTimer);
+      ladderRefreshTimer=setTimeout(async()=>{
+        await refreshMyServerRank();
+        if(currentDrawerTab==='ranking')await renderRankingDrawer(false);
+      },350);
+    }).subscribe();
 }
 async function resolveServerFight(targetId,win,drop=2){
   if(!cloudUser||!ladderReady||!targetId)return null;
@@ -403,15 +421,17 @@ function setVisual(a){bag.classList.remove('show');dumb.style.display='none';doc
 function render(){renderValues();if(!S.interrupted)setVisual(S.action);queueCloudSave()}
 function updateLiveStats(){document.querySelectorAll('[data-stat]').forEach(el=>el.textContent=S.stats[el.dataset.stat].toFixed(2));document.querySelectorAll('[data-rec=bread]').forEach(el=>el.textContent=S.rec.bread);document.querySelectorAll('[data-rec=breadMoney]').forEach(el=>el.textContent=S.rec.breadMoney.toLocaleString()+'원');document.querySelectorAll('[data-rec=trash]').forEach(el=>el.textContent=S.rec.trash||0)}
 
-async function renderRankingDrawer(){
+async function renderRankingDrawer(showLoading=true){
   const d=$('#drawer');if(!d||currentDrawerTab!=='ranking')return;
   if(!cloudUser){d.innerHTML='<b>교내 서열</b><p class="small">공유 서열표는 로그인하면 사용할 수 있습니다.</p>';return;}
   if(!S.profile?.registered){d.innerHTML='<b>교내 서열</b><p class="small">학생증을 발급하면 공유 서열에 등록됩니다.</p>';return;}
-  d.innerHTML='<b>교내 서열 <span class="liveState">● LIVE</span></b><p class="small">CPU와 실제 학생이 같은 서열표를 사용합니다. 새 학생은 현재 최하위 다음 순위로 등록됩니다.</p><div class="small">불러오는 중…</div>';
-  await ensureLadderRegistration();await refreshMyServerRank();const rows=await loadLadder();
+  // 등록 RPC는 여기서 호출하지 않는다. 기존에는 서열 화면 렌더링 → RPC UPDATE
+  // → Realtime 이벤트 → 다시 렌더링의 루프가 생겼다.
+  if(showLoading)d.innerHTML='<b>교내 서열 <span class="liveState">● LIVE</span></b><p class="small">CPU와 실제 학생이 같은 서열표를 사용합니다.</p><div class="small">불러오는 중…</div>';
+  await refreshMyServerRank();const rows=await loadLadder();
   if(currentDrawerTab!=='ranking')return;
   const visible=rows.filter(x=>Number(x.rank)!==S.rank);
-  d.innerHTML='<b>교내 서열 <span class="liveState">● LIVE</span></b><p class="small">현재 내 서열은 #'+S.rank+'입니다. CPU와 실제 학생의 순위 변동이 실시간으로 반영됩니다.</p>'+visible.map(x=>{const r=Number(x.rank),locked=r<450&&!S.boss,higher=r<S.rank&&!locked,tag=x.is_cpu?'<span class="ladderType">CPU</span>':'<span class="ladderType user">USER</span>';return `<div class="rankrow"><span><b>#${r}</b> ${x.display_name}${tag}</span>${locked?'<span class="cleared">🔒</span>':higher?`<button onclick="challengeRank(${r})">도전</button>`:'<span class="cleared">내 아래</span>'}</div>`}).join('')+`<div class="rankrow me"><span><b>#${S.rank}</b> ${S.profile.name||'나'} <span class="ladderType user">나</span></span><span class="cleared">현재 위치</span></div>`;
+  d.innerHTML='<b>교내 서열 <span class="liveState">● LIVE</span></b><p class="small">현재 내 서열은 #'+S.rank+'입니다. 순위가 실제로 변할 때만 자동 갱신됩니다.</p>'+visible.map(x=>{const r=Number(x.rank),locked=r<450&&!S.boss,higher=r<S.rank&&!locked,tag=x.is_cpu?'<span class="ladderType">CPU</span>':'<span class="ladderType user">USER</span>';return `<div class="rankrow"><span><b>#${r}</b> ${x.display_name}${tag}</span>${locked?'<span class="cleared">🔒</span>':higher?`<button onclick="challengeRank(${r})">도전</button>`:'<span class="cleared">내 아래</span>'}</div>`}).join('')+`<div class="rankrow me"><span><b>#${S.rank}</b> ${S.profile.name||'나'} <span class="ladderType user">나</span></span><span class="cleared">현재 위치</span></div>`;
 }
 window.challengeRank=function(r){const row=ladderByRank[Number(r)];if(!row)return;challenge(Number(r),row.id,row)};
 
