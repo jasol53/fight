@@ -323,17 +323,25 @@ window.deleteCharacter=async()=>{
   if(!second)return;
   try{
     clearTimeout(cloudTimer);
-    if(cloudUser){
-      const {error}=await sb.from('game_saves').delete().eq('user_id',cloudUser.id);
-      if(error){alert('클라우드 세이브 삭제에 실패했어: '+error.message);return;}
-    }
+    // 클라우드 행을 DELETE하려면 별도 RLS delete 정책이 필요하다.
+    // 그래서 캐릭터 삭제는 '빈 새 세이브로 덮어쓰기' 방식으로 처리한다.
+    resetStateInPlace();
     localStorage.removeItem(LOCAL_SAVE_KEY);
     localStorage.removeItem(OPENING_KEY);
-    resetStateInPlace();
     cloudLoadedFor=null;
+    saveLocal();
+    if(cloudUser){
+      const {error}=await sb.from('game_saves').upsert({
+        user_id:cloudUser.id,
+        save_data:persistentState(),
+        updated_at:new Date().toISOString()
+      },{onConflict:'user_id'});
+      if(error){alert('클라우드 초기화에 실패했어: '+error.message);return;}
+      cloudLoadedFor=cloudUser.id;
+    }
     render();
     const d=document.getElementById('drawer');if(d)d.classList.remove('open');
-    alert('캐릭터를 삭제했어. 새 전학생으로 다시 시작할게.');
+    alert('기존 캐릭터 데이터를 초기화했어. 새 전학생으로 다시 시작할게.');
     openOpening(true);
   }catch(e){alert('삭제 중 오류가 발생했어: '+(e?.message||e));}
 };
